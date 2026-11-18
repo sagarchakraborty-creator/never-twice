@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Never Twice</title>
+  <meta name="description" content="A habit tracker built on one rule: never skip it twice.">
+  <meta name="theme-color" content="#1f2a5c">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Never Twice">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">2<i></i></span>
+      <div>
+        <h1>Never Twice</h1>
+        <p id="today-label" class="muted"></p>
+      </div>
+    </div>
+    <button id="person-btn" class="chip" aria-label="Switch person"></button>
+  </header>
+
+  <main>
+    <!-- TODAY -->
+    <section id="view-today" class="view">
+      <div id="review-nudge"></div>
+      <div id="today-summary" class="summary"></div>
+      <div id="today-list"></div>
+      <div id="rest-list"></div>
+    </section>
+
+    <!-- REVIEW -->
+    <section id="view-review" class="view" hidden>
+      <div class="week-nav">
+        <button class="icon-btn" id="wk-prev" aria-label="Previous week">‹</button>
+        <div><h2 id="wk-title">Weekly review</h2><p id="wk-range" class="muted"></p></div>
+        <button class="icon-btn" id="wk-next" aria-label="Next week">›</button>
+      </div>
+      <p class="hint">Fifteen minutes. Three questions. Then put the comeback on your calendar.</p>
+
+      <div class="card q">
+        <div class="qn">1</div>
+        <h3>What did I commit to this week?</h3>
+        <div id="rv-commit"></div>
+        <textarea id="rv-commit-note" rows="2" placeholder="Anything else you promised yourself this week"></textarea>
+      </div>
+
+      <div class="card q">
+        <div class="qn warn">2</div>
+        <h3>What did I miss twice?</h3>
+        <div id="rv-twice"></div>
+        <textarea id="rv-twice-note" rows="2" placeholder="What got in the way?"></textarea>
+      </div>
+
+      <div class="card q">
+        <div class="qn">3</div>
+        <h3>What needs to change?</h3>
+        <textarea id="rv-change" rows="3" placeholder="One change for next week. Make it small."></textarea>
+      </div>
+
+      <div class="card q comeback-plan">
+        <div class="qn go">↺</div>
+        <h3>Put the comeback on the calendar</h3>
+        <label>Habit <select id="cb-habit"></select></label>
+        <label>Small version <input id="cb-small" type="text" placeholder="e.g. 10-minute workout"></label>
+        <div class="row2">
+          <label>Day <input id="cb-date" type="date"></label>
+          <label>Time <input id="cb-time" type="time" value="07:00"></label>
+        </div>
+        <div class="row2">
+          <a id="cb-gcal" class="btn ghost" target="_blank" rel="noopener">Google Calendar</a>
+          <button id="cb-ics" class="btn ghost">Calendar file (.ics)</button>
+        </div>
+      </div>
+
+      <button id="rv-save" class="btn primary wide">Save this review</button>
+      <p id="rv-saved" class="muted center"></p>
+
+      <h3 class="section-title">Past reviews</h3>
+      <div id="rv-history"></div>
+    </section>
+
+    <!-- HABITS -->
+    <section id="view-habits" class="view" hidden>
+      <div class="rule card">
+        <p class="rule-big">Never skip it twice.</p>
+        <p class="muted">You will miss sometimes. The first miss is an accident. The second one is a choice. When you come back, start with the small version.</p>
+      </div>
+      <div class="section-head">
+        <h3 class="section-title">Your habits</h3>
+        <button id="add-habit" class="btn primary small">+ Add</button>
+      </div>
+      <div id="habit-list"></div>
+
+      <h3 class="section-title">Stats</h3>
+      <div id="stats" class="stats"></div>
+
+      <h3 class="section-title">Backup</h3>
+      <div class="card">
+        <p class="muted">Your data stays on this phone. Save a backup now and then.</p>
+        <div class="row2">
+          <button id="export" class="btn ghost">Save backup</button>
+          <label class="btn ghost file">Load backup<input id="import" type="file" accept="application/json,.json" hidden></label>
+        </div>
+      </div>
+      <p class="muted center tiny" id="version"></p>
+    </section>
+  </main>
+
+  <nav class="tabs" role="tablist">
+    <button data-view="today" class="active"><span>●</span>Today</button>
+    <button data-view="review"><span>✎</span>Review</button>
+    <button data-view="habits"><span>☰</span>Habits</button>
+  </nav>
+
+  <!-- bottom sheet -->
+  <div id="sheet-bg" class="sheet-bg" hidden></div>
+  <div id="sheet" class="sheet" hidden role="dialog" aria-modal="true"></div>
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

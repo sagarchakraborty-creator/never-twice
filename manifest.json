@@ -1,0 +1,21 @@
+{
+  "name": "Never Twice",
+  "short_name": "Never Twice",
+  "description": "A habit tracker built on one rule: never skip it twice. Comeback days, small versions and a Sunday review.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f2ee",
+  "theme_color": "#1f2a5c",
+  "categories": ["health", "lifestyle", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Weekly review", "url": "./#review", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
