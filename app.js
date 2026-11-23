@@ -1,7 +1,7 @@
 'use strict';
 // Never Twice: a habit tracker built on one rule — never skip it twice.
 // Data stays on the phone in localStorage, one key per person.
-const APP_VERSION = '2026-11-18.1';
+const APP_VERSION = '2026-11-23.1';
 
 const PEOPLE = [
   { id: 'sagar', name: 'Sagar' },
@@ -103,7 +103,7 @@ function renderToday() {
   // Sunday review nudge
   const wk = t === sundayOf(t) ? t : addDays(sundayOf(t), -7);
   $('review-nudge').innerHTML = hs.length && !S.reviews[wk] && (t === wk || parse(t).getDay() === 1)
-    ? `<div class="nudge"><div><b>${t === wk ? 'It’s Sunday.' : 'Missed Sunday’s review?'}</b><p>Fifteen minutes. Three questions.</p></div><button class="btn small" data-go="review">Start</button></div>`
+    ? `<div class="nudge"><div><b>${t === wk ? 'It’s Sunday.' : 'Missed Sunday’s review?'}</b><p>One minute. Nothing to type.</p></div><button class="btn small" data-go="review">Start</button></div>`
     : '';
 
   if (!hs.length) {
@@ -265,24 +265,23 @@ function editHabit(h, preset) {
   const isNew = !h;
   const d = h || Object.assign({ emoji: '✨', name: '', full: '', small: '', days: [...ALL] }, preset || {});
   let days = [...d.days];
-  openSheet(`<h2>${isNew ? 'New habit' : 'Edit habit'}</h2>
-    ${isNew ? `<div class="quick">${SUGGEST.map((s, i) => `<button class="btn ghost small" data-q="${i}">${s.emoji} ${esc(s.name)}</button>`).join('')}</div>` : ''}
-    <div class="row2"><label style="flex:0 0 76px">Icon <input id="f-emoji" value="${esc(d.emoji)}" maxlength="4"></label>
-      <label>Habit <input id="f-name" value="${esc(d.name)}" placeholder="e.g. Workout"></label></div>
-    <label>Full version <input id="f-full" value="${esc(d.full)}" placeholder="e.g. 60-minute workout"></label>
-    <label>Small version, for comeback days <input id="f-small" value="${esc(d.small)}" placeholder="Make it tiny, e.g. 10 minutes"></label>
-    <label>Days</label><div class="daypick">${[1, 2, 3, 4, 5, 6, 0].map(i => `<button data-d="${i}" class="${days.includes(i) ? 'on' : ''}">${DOW[i]}</button>`).join('')}</div>
-    <div class="stack"><button class="btn primary" id="f-save">Save</button>
+  openSheet(`<h2>${isNew ? 'Add a habit' : 'Edit habit'}</h2>
+    ${isNew ? `<p class="muted" style="margin-bottom:8px">Tap one to add it:</p><div class="quick">${SUGGEST.map((s, i) => `<button class="btn ghost small" data-q="${i}">${s.emoji} ${esc(s.name)}</button>`).join('')}</div>
+      <p class="muted" style="margin-bottom:8px">Or type your own:</p>` : ''}
+    <input id="f-name" value="${esc(d.name)}" placeholder="e.g. Drink 2 L water" style="margin-bottom:10px">
+    <details class="more" ${isNew ? '' : 'open'}><summary>More options</summary>
+      <div class="row2"><label style="flex:0 0 76px">Icon <input id="f-emoji" value="${esc(d.emoji)}" maxlength="4"></label>
+        <label>Full version <input id="f-full" value="${esc(d.full)}" placeholder="Same as the name"></label></div>
+      <label>Small version, for comeback days <input id="f-small" value="${esc(d.small)}" placeholder="Just 2 minutes"></label>
+      <label>Days</label><div class="daypick">${[1, 2, 3, 4, 5, 6, 0].map(i => `<button data-d="${i}" class="${days.includes(i) ? 'on' : ''}">${DOW[i]}</button>`).join('')}</div>
+    </details>
+    <div class="stack"><button class="btn primary" id="f-save">${isNew ? 'Add' : 'Save'}</button>
       ${isNew ? '' : '<button class="btn danger" id="f-del">Remove habit</button>'}</div>`, el => {
     const paintDays = () => el.querySelectorAll('[data-d]').forEach(b => b.classList.toggle('on', days.includes(+b.dataset.d)));
     el.querySelectorAll('[data-d]').forEach(b => b.onclick = () => {
       const i = +b.dataset.d; days = days.includes(i) ? days.filter(x => x !== i) : [...days, i]; paintDays();
     });
-    el.querySelectorAll('[data-q]').forEach(b => b.onclick = () => {
-      const s = SUGGEST[+b.dataset.q];
-      $('f-emoji').value = s.emoji; $('f-name').value = s.name; $('f-full').value = s.full; $('f-small').value = s.small;
-      days = [...s.days]; paintDays();
-    });
+    el.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { closeSheet(); addSuggestion(+b.dataset.q); });
     $('f-save').onclick = () => {
       const name = $('f-name').value.trim();
       if (!name) return toast('Give the habit a name');
@@ -307,6 +306,8 @@ function addSuggestion(i) {
 }
 
 // ---------- REVIEW ----------
+// No typing: the app answers "what did I commit to" and "what did I miss twice" from the log.
+// For each habit missed twice you get two taps: put the comeback in the calendar, or make the habit smaller.
 function defaultWeek() {
   const t = today(); const thisSun = sundayOf(t);
   const lastSun = addDays(thisSun, -7);
@@ -322,101 +323,68 @@ function weekData(end) {
     wk.forEach(x => c[x.s]++);
     let planned = 0;
     for (let k = start; k <= end; k = addDays(k, 1)) if (k >= h.created && h.days.includes(parse(k).getDay())) planned++;
-    // twice: two misses in a row with the second inside this week
     const twiceDays = [];
     tl.forEach((x, i) => { if (x.d >= start && x.s === 'miss' && i > 0 && tl[i - 1].s === 'miss') twiceDays.push(x.d); });
     return { h, c, planned, twiceDays };
   });
+}
+function comebackDay(h) {
+  const t = today();
+  return h.days.includes(parse(t).getDay()) && !(S.log[t] || {})[h.id] ? t : nextDay(h, t) || addDays(t, 1);
 }
 
 function renderReview() {
   if (!weekEnd) weekEnd = defaultWeek();
   const start = addDays(weekEnd, -6);
   const saved = S.reviews[weekEnd];
-  const draft = saved || S.drafts[weekEnd] || {};
   $('wk-title').textContent = weekEnd === sundayOf(today()) ? 'This week' : weekEnd === addDays(sundayOf(today()), -7) ? 'Last week' : 'Weekly review';
   $('wk-range').textContent = `${nice(start)} – ${nice(weekEnd)}`;
   $('wk-next').disabled = weekEnd >= sundayOf(today());
 
   const data = weekData(weekEnd);
   $('rv-commit').innerHTML = data.length ? data.map(({ h, c, planned }) => `<div class="rv-row">${esc(h.emoji)} <span>${esc(h.name)}</span>
-      <span class="n">${c.full ? `<span class="pill full">${c.full} done</span> ` : ''}${c.small ? `<span class="pill small">${c.small} small</span> ` : ''}${c.miss ? `<span class="pill miss">${c.miss} missed</span> ` : ''}of ${planned} planned</span></div>`).join('')
+      <span class="n">${c.full ? `<span class="pill full">${c.full} done</span>` : ''}${c.small ? `<span class="pill small">${c.small} small</span>` : ''}${c.miss ? `<span class="pill miss">${c.miss} missed</span>` : ''} of ${planned} planned</span></div>`).join('')
     : `<p class="muted">No habits in this week.</p>`;
 
   const twice = data.filter(x => x.twiceDays.length);
-  $('rv-twice').innerHTML = twice.length
-    ? twice.map(({ h, twiceDays }) => `<div class="rv-row">${esc(h.emoji)} <span>${esc(h.name)}</span><span class="n"><span class="pill miss">twice</span> ${twiceDays.map(nice).join(', ')}</span></div>`).join('')
-    : data.length ? `<p class="good">Nothing missed twice. The rule held.</p>` : '';
+  $('rv-twice').innerHTML = !data.length ? '' : twice.length
+    ? `<h3>Missed twice</h3><p class="muted" style="margin:2px 0 6px">Plan the comeback, and keep it small.</p>` +
+      twice.map(({ h, twiceDays }) => `<div class="tw"><div class="rv-row">${esc(h.emoji)} <span><b>${esc(h.name)}</b></span>
+        <span class="n"><span class="pill miss">twice</span> ${twiceDays.map(nice).join(', ')}</span></div>
+        <div class="actions"><button class="btn amber grow" data-cal="${h.id}">📅 Comeback ${nice(comebackDay(h))}: ${esc(h.small)}</button>
+        <button class="btn ghost grow" data-shrink="${h.id}">Make it smaller</button></div></div>`).join('')
+    : `<p class="good" style="font-size:17px">✓ Nothing missed twice. The rule held.</p>`;
 
-  $('rv-commit-note').value = draft.commit || '';
-  $('rv-twice-note').value = draft.twice || '';
-  $('rv-change').value = draft.change || '';
-
-  // comeback planner
-  const hs = active();
-  const pick = draft.cb?.habit && hs.some(h => h.id === draft.cb.habit) ? draft.cb.habit : (twice[0]?.h.id || data.find(x => x.c.miss)?.h.id || hs[0]?.id || '');
-  $('cb-habit').innerHTML = hs.map(h => `<option value="${h.id}" ${h.id === pick ? 'selected' : ''}>${esc(h.emoji)} ${esc(h.name)}</option>`).join('');
-  const ph = hs.find(h => h.id === pick);
-  $('cb-small').value = draft.cb?.small || ph?.small || '';
-  const base = weekEnd < today() ? today() : weekEnd;
-  $('cb-date').value = draft.cb?.date || (ph ? nextDay(ph, addDays(base, -1)) || addDays(base, 1) : addDays(base, 1));
-  $('cb-time').value = draft.cb?.time || '07:00';
-  updateCal();
-
-  $('rv-saved').textContent = saved ? `Saved ${new Date(saved.at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}` : '';
-  $('rv-save').textContent = saved ? 'Update this review' : 'Save this review';
-
-  const past = Object.entries(S.reviews).sort((a, b) => b[0].localeCompare(a[0]));
-  $('rv-history').innerHTML = past.length ? past.map(([k, r]) => {
-    const h = S.habits.find(x => x.id === r.cb?.habit);
-    return `<div class="card past" data-week="${k}"><b>${nice(addDays(k, -6))} – ${nice(k)}</b>
-      ${r.twiceList?.length ? `<p><span class="k">Missed twice</span><br>${esc(r.twiceList.join(', '))}</p>` : '<p class="good">Nothing missed twice</p>'}
-      ${r.change ? `<p><span class="k">Change</span><br>${esc(r.change)}</p>` : ''}
-      ${h ? `<p><span class="k">Comeback</span><br>${esc(h.name)}: ${esc(r.cb.small)} · ${nice(r.cb.date)}</p>` : ''}</div>`;
-  }).join('') : `<p class="muted">Your saved reviews show up here.</p>`;
+  $('rv-saved').textContent = saved ? `Reviewed ${new Date(saved.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : '';
+  $('rv-save').textContent = saved ? 'Reviewed ✓' : 'Done ✓';
+  $('rv-save').disabled = !!saved;
 }
 
-function reviewForm() {
-  return {
-    commit: $('rv-commit-note').value.trim(), twice: $('rv-twice-note').value.trim(), change: $('rv-change').value.trim(),
-    cb: { habit: $('cb-habit').value, small: $('cb-small').value.trim(), date: $('cb-date').value, time: $('cb-time').value },
-  };
+function addToCalendar(h) {
+  const d = comebackDay(h);
+  const [Y, M, D] = d.split('-');
+  const st = `${Y}${M}${D}T070000`, en = `${Y}${M}${D}T073000`;
+  const title = `Comeback: ${h.name} (${h.small})`;
+  const details = `Never skip it twice. Just the small version: ${h.small}.`;
+  if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    const e = s => s.replace(/[\\,;]/g, m => '\\' + m);
+    const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Never Twice//EN', 'BEGIN:VEVENT', `UID:${uid()}@nevertwice`,
+      `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`, `DTSTART:${st}`, `DTEND:${en}`,
+      `SUMMARY:${e(title)}`, `DESCRIPTION:${e(details)}`, 'BEGIN:VALARM', 'TRIGGER:-PT10M', 'ACTION:DISPLAY',
+      `DESCRIPTION:${e(title)}`, 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    saveFile(new Blob([ics], { type: 'text/calendar' }), 'comeback.ics');
+  } else {
+    window.open('https://calendar.google.com/calendar/render?' + new URLSearchParams({ action: 'TEMPLATE', text: title, details, dates: `${st}/${en}` }), '_blank', 'noopener');
+  }
 }
-function calEvent() {
-  const f = reviewForm().cb; const h = S.habits.find(x => x.id === f.habit);
-  if (!h || !f.date) return null;
-  const [Y, M, D] = f.date.split('-'); const [hh, mm] = (f.time || '07:00').split(':');
-  const st = `${Y}${M}${D}T${hh}${mm}00`;
-  const endD = new Date(+Y, +M - 1, +D, +hh, +mm + 30);
-  const en = `${endD.getFullYear()}${pad(endD.getMonth() + 1)}${pad(endD.getDate())}T${pad(endD.getHours())}${pad(endD.getMinutes())}00`;
-  return { title: `Comeback: ${h.name}${f.small ? ' (' + f.small + ')' : ''}`,
-    details: `Never skip it twice. Just the small version today: ${f.small || h.small}.`, st, en };
-}
-function updateCal() {
-  const e = calEvent(); const a = $('cb-gcal');
-  if (!e) { a.removeAttribute('href'); return; }
-  a.href = 'https://calendar.google.com/calendar/render?' + new URLSearchParams({ action: 'TEMPLATE', text: e.title, details: e.details, dates: `${e.st}/${e.en}` });
-}
-function downloadIcs() {
-  const e = calEvent(); if (!e) return toast('Pick a habit and a day');
-  const icsEsc = s => s.replace(/[\\,;]/g, m => '\\' + m);
-  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Never Twice//EN', 'BEGIN:VEVENT',
-    `UID:${uid()}@nevertwice`, `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`,
-    `DTSTART:${e.st}`, `DTEND:${e.en}`, `SUMMARY:${icsEsc(e.title)}`, `DESCRIPTION:${icsEsc(e.details)}`,
-    'BEGIN:VALARM', 'TRIGGER:-PT10M', 'ACTION:DISPLAY', `DESCRIPTION:${icsEsc(e.title)}`, 'END:VALARM',
-    'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
-  saveFile(new Blob([ics], { type: 'text/calendar' }), 'comeback.ics');
-}
-function saveDraft() {
-  if (S.reviews[weekEnd]) return;
-  S.drafts[weekEnd] = reviewForm(); save();
+function shrink(h) {
+  const v = prompt(`Smaller version of “${h.name}”`, h.small);
+  if (v && v.trim()) { h.small = v.trim(); save(); renderReview(); toast('Smaller it is. Easier to come back.'); }
 }
 function saveReview() {
-  const f = reviewForm();
   const twiceList = weekData(weekEnd).filter(x => x.twiceDays.length).map(x => x.h.name);
-  S.reviews[weekEnd] = { ...f, twiceList, at: Date.now() };
-  delete S.drafts[weekEnd];
-  save(); buzz([20, 40, 20]); toast('Review saved. Now put the comeback on your calendar.'); renderReview();
+  S.reviews[weekEnd] = { twiceList, at: Date.now() };
+  save(); buzz([20, 40, 20]); toast('Week reviewed.'); renderReview();
 }
 
 // ---------- backup ----------
@@ -442,8 +410,45 @@ function importData(file) {
   r.readAsText(file);
 }
 
+// ---------- install ----------
+const APP_URL = 'https://sagarchakraborty-creator.github.io/never-twice/';
+let installEvt = null;
+const isInstalled = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+function installHidden() { try { return localStorage.getItem('nevertwice.installHide') === '1'; } catch { return false; } }
+function renderInstall() {
+  $('install-card').innerHTML = isInstalled() || installHidden() ? '' : `<div class="card installcard">
+    <img src="icons/icon-192.png" alt="" width="48" height="48">
+    <div><b>Get Never Twice on your home screen</b><p class="muted">Opens full-screen like a normal app and works offline.</p></div>
+    <div class="actions" style="flex-basis:100%"><button class="btn primary grow" data-install>⬇ Install app</button>
+    <button class="btn link" data-install-hide>Not now</button></div></div>`;
+  $('install-btn').hidden = isInstalled();
+}
+async function doInstall() {
+  if (installEvt) { // Chrome / Edge: the browser's own one-tap install box
+    installEvt.prompt();
+    const { outcome } = await installEvt.userChoice;
+    installEvt = null;
+    if (outcome !== 'accepted') toast('Not installed. Tap Install again any time.');
+    return;
+  }
+  const ua = navigator.userAgent;
+  const ios = /iPhone|iPad|iPod/i.test(ua), android = /Android/i.test(ua), iosOther = ios && /CriOS|FxiOS|EdgiOS/i.test(ua);
+  const steps = ios && iosOther ? ['Copy the link below and open it in <b>Safari</b>. iPhone can only install from Safari.', 'In Safari, tap <b>Share</b> ⬆ at the bottom.', 'Tap <b>Add to Home Screen</b>, then <b>Add</b>.']
+    : ios ? ['Tap <b>Share</b> ⬆ at the bottom of Safari.', 'Scroll down and tap <b>Add to Home Screen</b>.', 'Tap <b>Add</b>. Open Never Twice from your home screen.']
+    : android ? ['Tap the <b>⋮</b> menu at the top right of Chrome.', 'Tap <b>Install app</b> (or <b>Add to Home screen</b>).', 'Tap <b>Install</b>. Open Never Twice from your home screen.']
+    : ['On your phone, open the link below (or scan the QR code on the download page).', 'Android: Chrome ⋮ → <b>Install app</b>. iPhone: Safari Share → <b>Add to Home Screen</b>.'];
+  openSheet(`<h2>Install Never Twice</h2><ol class="isteps">${steps.map(s => `<li>${s}</li>`).join('')}</ol>
+    <div class="stack"><button class="btn ghost" id="copy-link">Copy link</button><button class="btn link" id="close-sheet">Close</button></div>`, el => {
+    $('copy-link').onclick = async () => { try { await navigator.clipboard.writeText(APP_URL); toast('Link copied'); } catch { toast(APP_URL); } };
+    $('close-sheet').onclick = closeSheet;
+  });
+}
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
+window.addEventListener('appinstalled', () => { installEvt = null; renderInstall(); toast('Installed. Open Never Twice from your home screen.'); });
+
 // ---------- shell ----------
 function render() {
+  renderInstall();
   const p = PEOPLE.find(x => x.id === person);
   $('person-btn').textContent = `${p.name} ▾`;
   document.querySelectorAll('.view').forEach(v => v.hidden = v.id !== `view-${view}`);
@@ -466,6 +471,10 @@ function buzz(p) { try { navigator.vibrate && navigator.vibrate(p); } catch {} }
 
 document.addEventListener('click', e => {
   const b = e.target.closest('button, [data-habit], [data-go]'); if (!b) return;
+  if (b.dataset.install !== undefined) return doInstall();
+  if (b.dataset.installHide !== undefined) { try { localStorage.setItem('nevertwice.installHide', '1'); } catch {} return renderInstall(); }
+  if (b.dataset.cal) return addToCalendar(S.habits.find(h => h.id === b.dataset.cal));
+  if (b.dataset.shrink) return shrink(S.habits.find(h => h.id === b.dataset.shrink));
   if (b.dataset.view) return go(b.dataset.view);
   if (b.dataset.go) return go(b.dataset.go);
   if (b.dataset.log !== undefined) return setLog(b.dataset.log, today(), b.dataset.s);
@@ -485,14 +494,6 @@ $('person-btn').onclick = () => openSheet(`<h2>Who is using the app?</h2><div cl
 });
 $('wk-prev').onclick = () => { weekEnd = addDays(weekEnd, -7); renderReview(); };
 $('wk-next').onclick = () => { weekEnd = addDays(weekEnd, 7); renderReview(); };
-['rv-commit-note', 'rv-twice-note', 'rv-change', 'cb-small', 'cb-date', 'cb-time'].forEach(id => $(id).addEventListener('input', () => { updateCal(); saveDraft(); }));
-$('cb-habit').onchange = () => {
-  const h = S.habits.find(x => x.id === $('cb-habit').value);
-  if (h) { $('cb-small').value = h.small; $('cb-date').value = nextDay(h, addDays(today(), -1)) || addDays(today(), 1); }
-  updateCal(); saveDraft();
-};
-$('cb-ics').onclick = downloadIcs;
-$('cb-gcal').addEventListener('click', e => { if (!calEvent()) { e.preventDefault(); toast('Pick a habit and a day'); } });
 $('rv-save').onclick = saveReview;
 $('export').onclick = exportData;
 $('import').onchange = e => { const f = e.target.files[0]; if (f) importData(f); e.target.value = ''; };

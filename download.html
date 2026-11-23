@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Download Never Twice</title>
+  <meta name="description" content="Get the Never Twice habit app on your phone.">
+  <meta name="theme-color" content="#1f2a5c">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <style>
+    :root { --bg: #f4f2ee; --card: #fff; --ink: #1b1f33; --muted: #6b6f80; --line: #e6e2da; --navy: #1f2a5c; --amber: #e88a1a; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #11131c; --card: #1b1e2b; --ink: #eceef6; --muted: #9a9fb3; --line: #2c3042; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); }
+    main { max-width: 480px; margin: 0 auto; padding: 32px 16px 40px; text-align: center; }
+    .icon { width: 96px; height: 96px; border-radius: 24px; box-shadow: 0 8px 24px rgba(31,42,92,.25); }
+    h1 { font-size: 28px; margin: 16px 0 4px; letter-spacing: -.02em; }
+    .tag { color: var(--muted); margin: 0 0 22px; }
+    .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 54px; border-radius: 14px; border: 0;
+      background: var(--navy); color: #fff; font: inherit; font-weight: 700; font-size: 18px; text-decoration: none; cursor: pointer; }
+    .btn.ghost { background: var(--card); color: var(--ink); border: 1px solid var(--line); font-size: 15px; min-height: 46px; margin-top: 10px; }
+    .card { background: var(--card); border-radius: 18px; padding: 18px; margin-top: 18px; text-align: left; box-shadow: 0 1px 2px rgba(20,24,50,.06), 0 6px 18px rgba(20,24,50,.06); }
+    .card h2 { font-size: 16px; margin: 0 0 8px; }
+    ol { margin: 0; padding-left: 22px; } li { margin-bottom: 6px; }
+    #qr { display: grid; place-items: center; padding: 14px; background: #fff; border-radius: 14px; width: max-content; margin: 6px auto 8px; }
+    .muted { color: var(--muted); font-size: 14px; margin: 0; }
+    .url { word-break: break-all; font-weight: 600; font-size: 14px; }
+    .pc-only { display: none; }
+    @media (hover: hover) and (pointer: fine) { .pc-only { display: block; } }
+  </style>
+</head>
+<body>
+<main>
+  <img class="icon" src="icons/icon-512.png" alt="Never Twice icon">
+  <h1>Never Twice</h1>
+  <p class="tag">A habit app with one rule: never skip it twice.</p>
+
+  <button class="btn" id="install">⬇ Download the app</button>
+  <a class="btn ghost" href="./">Open in the browser instead</a>
+
+  <div class="card pc-only">
+    <h2>On a computer? Scan this with your phone</h2>
+    <div id="qr"></div>
+    <p class="muted center" style="text-align:center">Point your phone camera at the code, then tap the link.</p>
+  </div>
+
+  <div class="card">
+    <h2>Android (Chrome)</h2>
+    <ol><li>Tap <b>Download the app</b> above, then <b>Install</b>.</li>
+      <li>If nothing pops up: Chrome <b>⋮</b> menu → <b>Install app</b>.</li>
+      <li>Open <b>Never Twice</b> from your home screen.</li></ol>
+  </div>
+  <div class="card">
+    <h2>iPhone (Safari)</h2>
+    <ol><li>Open this page in <b>Safari</b>. iPhone can only install from Safari.</li>
+      <li>Tap <b>Share</b> ⬆ at the bottom.</li>
+      <li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li></ol>
+  </div>
+  <div class="card">
+    <p class="muted">It installs straight from this website, with no app store and no sign-up. Your habits stay on your phone. It works offline and updates itself.</p>
+    <p class="url" style="margin-top:8px">sagarchakraborty-creator.github.io/never-twice</p>
+    <button class="btn ghost" id="copy">Copy link</button>
+  </div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  const PAGE = 'https://sagarchakraborty-creator.github.io/never-twice/download.html';
+  const APP = 'https://sagarchakraborty-creator.github.io/never-twice/';
+  try { new QRCode(document.getElementById('qr'), { text: PAGE, width: 200, height: 200, colorDark: '#1f2a5c', colorLight: '#ffffff' }); }
+  catch (e) { document.getElementById('qr').textContent = PAGE; }
+
+  let evt = null;
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); evt = e; });
+  addEventListener('appinstalled', () => { document.getElementById('install').textContent = '✓ Installed. Open it from your home screen'; });
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+  document.getElementById('install').onclick = async () => {
+    if (evt) { evt.prompt(); await evt.userChoice; evt = null; return; }
+    const ua = navigator.userAgent;
+    if (/iPhone|iPad|iPod/i.test(ua)) alert('On iPhone: tap Share ⬆ at the bottom of Safari, then "Add to Home Screen".');
+    else if (/Android/i.test(ua)) alert('Tap the ⋮ menu at the top right of Chrome, then "Install app".');
+    else alert('Scan the QR code with your phone, or open ' + APP + ' on your phone.');
+  };
+  document.getElementById('copy').onclick = async () => {
+    try { await navigator.clipboard.writeText(PAGE); document.getElementById('copy').textContent = 'Link copied'; }
+    catch { prompt('Copy this link', PAGE); }
+  };
+</script>
+</body>
+</html>

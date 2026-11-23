@@ -1,7 +1,7 @@
 // Never Twice service worker: offline app shell. Bump VERSION on every release, or phones keep the old copy.
-const VERSION = '2026-11-18.1';
+const VERSION = '2026-11-23.1';
 const SHELL = `nevertwice-shell-${VERSION}`;
-const FILES = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.json', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-512-maskable.png'];
+const FILES = ['./', 'index.html', 'download.html', 'styles.css', 'app.js', 'manifest.json', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-512-maskable.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(SHELL).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

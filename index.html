@@ -28,6 +28,7 @@
   <main>
     <!-- TODAY -->
     <section id="view-today" class="view">
+      <div id="install-card"></div>
       <div id="review-nudge"></div>
       <div id="today-summary" class="summary"></div>
       <div id="today-list"></div>
@@ -41,48 +42,17 @@
         <div><h2 id="wk-title">Weekly review</h2><p id="wk-range" class="muted"></p></div>
         <button class="icon-btn" id="wk-next" aria-label="Next week">›</button>
       </div>
-      <p class="hint">Fifteen minutes. Three questions. Then put the comeback on your calendar.</p>
+      <p class="hint center">Nothing to fill in. The app reads your week for you.</p>
 
-      <div class="card q">
-        <div class="qn">1</div>
-        <h3>What did I commit to this week?</h3>
+      <div class="card">
+        <h3 style="margin-bottom:6px">Your week</h3>
         <div id="rv-commit"></div>
-        <textarea id="rv-commit-note" rows="2" placeholder="Anything else you promised yourself this week"></textarea>
       </div>
 
-      <div class="card q">
-        <div class="qn warn">2</div>
-        <h3>What did I miss twice?</h3>
-        <div id="rv-twice"></div>
-        <textarea id="rv-twice-note" rows="2" placeholder="What got in the way?"></textarea>
-      </div>
+      <div class="card" id="rv-twice"></div>
 
-      <div class="card q">
-        <div class="qn">3</div>
-        <h3>What needs to change?</h3>
-        <textarea id="rv-change" rows="3" placeholder="One change for next week. Make it small."></textarea>
-      </div>
-
-      <div class="card q comeback-plan">
-        <div class="qn go">↺</div>
-        <h3>Put the comeback on the calendar</h3>
-        <label>Habit <select id="cb-habit"></select></label>
-        <label>Small version <input id="cb-small" type="text" placeholder="e.g. 10-minute workout"></label>
-        <div class="row2">
-          <label>Day <input id="cb-date" type="date"></label>
-          <label>Time <input id="cb-time" type="time" value="07:00"></label>
-        </div>
-        <div class="row2">
-          <a id="cb-gcal" class="btn ghost" target="_blank" rel="noopener">Google Calendar</a>
-          <button id="cb-ics" class="btn ghost">Calendar file (.ics)</button>
-        </div>
-      </div>
-
-      <button id="rv-save" class="btn primary wide">Save this review</button>
+      <button id="rv-save" class="btn primary wide">Done ✓</button>
       <p id="rv-saved" class="muted center"></p>
-
-      <h3 class="section-title">Past reviews</h3>
-      <div id="rv-history"></div>
     </section>
 
     <!-- HABITS -->
@@ -108,6 +78,7 @@
           <label class="btn ghost file">Load backup<input id="import" type="file" accept="application/json,.json" hidden></label>
         </div>
       </div>
+      <button id="install-btn" class="btn primary wide" data-install>⬇ Install Never Twice on this phone</button>
       <p class="muted center tiny" id="version"></p>
     </section>
   </main>

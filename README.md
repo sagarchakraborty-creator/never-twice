@@ -8,3 +8,4 @@ A habit tracker built on one rule: **never skip it twice.**
 - Data stays on your phone (localStorage). Save a backup from the Habits tab.
 
 Live: https://sagarchakraborty-creator.github.io/never-twice/
+Download page (QR code + install steps): https://sagarchakraborty-creator.github.io/never-twice/download.html
